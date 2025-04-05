@@ -1,0 +1,24 @@
+<header>
+    <h1><a class="backHome" href="/">YouSearch</a></h1>
+    <form action="/search" method="get">
+        <input type="text" name="query" placeholder="Search..." value="{{query}}" required>
+        <button type="submit">Search</button>
+    </form>
+</header>
+<hr>
+<main>
+    {{#if results.length}}
+        <h2>Search Results for "{{query}}"</h2>
+    <ul>
+        {{#each results}}
+            <li>
+                <a href="{{url}}" target="_blank">{{title}}</a>
+                <p>{{snippet}}</p>
+            </li>
+        {{/each}}
+    </ul>
+    {{else}}
+        <h2>No results found for "{{query}}"</h2>
+        <p>Try refining your search or using different keywords.</p>
+    {{/if}}
+</main>

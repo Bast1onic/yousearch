@@ -1,0 +1,107 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+/* Header Styles */
+header {
+    background-color: #0073e6;
+    color: #fff;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+.backHome {
+    color: white;
+    text-decoration: none;
+}
+
+header form {
+    margin-top: 1rem;
+}
+
+header input[type="text"] {
+    padding: 0.5rem;
+    width: 70%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+header button {
+    padding: 0.5rem 1rem;
+    border: none;
+    background-color: #005bb5;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+header button:hover {
+    background-color: #003d80;
+}
+
+/* Main Content Styles */
+main {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+main h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+main ul {
+    list-style: none;
+    padding: 0;
+}
+
+main li {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 1rem;
+}
+
+main li:last-child {
+    border-bottom: none;
+}
+
+main a {
+    color: #0073e6;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+main a:hover {
+    text-decoration: underline;
+}
+
+main p {
+    margin: 0.5rem 0 0;
+    color: #666;
+}
+
+/* Footer Styles */
+footer {
+    text-align: center;
+    padding: 1rem;
+    margin-top: 2rem;
+    background-color: #0073e6;
+    color: #fff;
+    border-top: 2px solid #005bb5;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}

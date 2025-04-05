@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
+import searchRouter from './src/routes/searchResults.mjs';
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -33,8 +35,10 @@ app.use(express.json());
 
 
 // Routes
+app.use('/', searchRouter);
+
 app.get('/', (req, res) => {
-    res.render('home', { siteTitle: 'YouSearch' }); // Pass dynamic data
+    res.render('home', { siteTitle: 'YouSearch', stylesheet: '/css/main.css'}); // Pass dynamic data
   });
 
 // Start the server
