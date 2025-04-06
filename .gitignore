@@ -1,8 +1,10 @@
 .env
 node_modules/
 package-lock.json
-.sql
+*.sql
 
 .DS_Store
 .DS_Store?
 .node_repl_history
+
+TODO.md
