@@ -15,6 +15,7 @@ DB_PASSWORD=
 DB_NAME=searchScraper
 ```
 The password can be whatever you want.
+
 2. Run the following commands in MySQL to create the tables (make sure to replace password with the password specified above before running):
 ```
 CREATE SCHEMA searchScraper;
@@ -29,7 +30,7 @@ CREATE TABLE `searchScraper`.`searchLog` (
 
 CREATE TABLE `searchScraper`.`searchResults` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    url VARCHAR(2083) NOT NULL, -- Using a large VARCHAR to accommodate URLs
+    url VARCHAR(2083) NOT NULL,
     termCount INT NOT NULL CHECK (termCount >= 0),
     source ENUM('bing', 'ddg', 'google', 'yahoo') NOT NULL,
     searchLog_id INT NOT NULL,
@@ -39,6 +40,7 @@ CREATE TABLE `searchScraper`.`searchResults` (
 CREATE USER 'searchScraperApp'@'localhost' IDENTIFIED BY 'password';
 GRANT ALL PRIVILEGES ON searchScraper.* TO 'searchScraperApp'@'localhost';
 ```
+
 3. Run the following commands:
 * `git clone https://github.com/Bast1onic/yousearch.git`
 * `npm i`

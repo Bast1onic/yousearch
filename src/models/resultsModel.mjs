@@ -7,7 +7,7 @@ export const getResultsByQueryId = async (id) => {
 };
 
 export const addResults = async (resultsList, sEngine, queryId) => {
-    const valsToInsert = resultsList.map(ele => `('${ele.url}', 0, ${sEngine}, ${queryId})`).join(',\n')
+    const valsToInsert = resultsList.map(ele => `('${ele}', 0, ${sEngine}, ${queryId})`).join(',\n')
     const [result] = await pool.query(
         `INSERT INTO ${tableName} (url, termCount, source, searchLog_id)
         VALUES ${valsToInsert};`,
