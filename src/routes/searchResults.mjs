@@ -1,5 +1,7 @@
 import express from 'express';
+import { returnResults } from '../controllers/fetchResults.mjs';
 const searchRouter = express.Router();
+let useDb = false;
 
 // Example data to simulate search results
 const sampleResults = [
@@ -10,6 +12,11 @@ const sampleResults = [
 
 searchRouter.get('/search', (req, res) => {
     const query = req.query.query || ''; // Get the search query from the URL parameters
+    let searchRes = []
+    if(useDb && query){
+        searchRes = returnResults(query);
+        console.log(searchRes);
+    }
 
     if (query) {
         // Filter the results based on the query

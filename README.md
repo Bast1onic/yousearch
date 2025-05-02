@@ -30,6 +30,7 @@ CREATE TABLE `searchScraper`.`searchLog` (
 
 CREATE TABLE `searchScraper`.`searchResults` (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
     url VARCHAR(2083) NOT NULL,
     termCount INT NOT NULL CHECK (termCount >= 0),
     source ENUM('bing', 'ddg', 'google', 'yahoo') NOT NULL,

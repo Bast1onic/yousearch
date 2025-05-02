@@ -1,4 +1,4 @@
-import pool from './database.mjs';
+import pool from './db.mjs';
 const tableName = 'searchLog'
 
 export const getAllQueries = async () => {
@@ -7,7 +7,7 @@ export const getAllQueries = async () => {
 };
 
 export const getQueryById = async (id) => {
-    const [rows] = await pool.query(`SELECT * FROM ${tableName} WHERE id = ${id}`);
+    const [rows] = await pool.query(`SELECT * FROM ${tableName} WHERE id = ?`, [id]);
     return rows[0];
 };
 
@@ -18,5 +18,10 @@ export const addQuery = async (query) => {
         [query.toLowerCase(), initTime]
     );
     return result.insertId;
+};
+
+export const findQueryByName = async (query) => {
+    const [rows] = await pool.query(`SELECT * FROM ${tableName} WHERE searchPhrase = ?`, [query.toLowerCase()]);
+    return rows.length > 0 ? rows[0].id : null;
 };
 

@@ -1,4 +1,4 @@
-import pool from './database.mjs';
+import pool from './db.mjs';
 const tableName = 'searchResults'
 
 export const getResultsByQueryId = async (id) => {
