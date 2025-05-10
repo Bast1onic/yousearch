@@ -1,211 +1,214 @@
-import { Builder, By, until } from 'selenium-webdriver';
-import chrome from 'selenium-webdriver/chrome';
+// test1.js
+// Usage:
+//   npm install puppeteer readline-sync selenium-webdriver chromedriver
+//   node test1.js
+
+import fs from 'fs';
+
+import puppeteer from 'puppeteer';
 import readline from 'readline-sync';
 
-async function sleep(ms) {
+// Selenium imports
+import 'chromedriver';
+
+import { Builder, By, until } from 'selenium-webdriver';
+import { Options as chromeOptions } from 'selenium-webdriver/chrome.js';
+
+// General constants
+const MAX_PER_ENGINE = 10; // 250 for non-Google engines
+const GOOGLE_PAGES   = 2;  // number of Google pages to fetch, 25
+const BATCH_SIZE     = 10;  // links per Google page, 10
+const DELAY_MS       = 500; // ms delay between operations
+
+// Delay helper for Puppeteer
+function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Optional proxies (one per line in proxies.txt)
+const proxies = fs.existsSync('proxies.txt')
+  ? fs.readFileSync('proxies.txt', 'utf8').split(/\r?\n/).filter(Boolean)
+  : [];
+
+// Rotate user-agents
+const userAgents = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/115.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/15.1 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36'
+];
+function randomChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// Build Selenium driver
 async function buildDriver() {
-  const options = new chrome.Options();
-  options.addArguments('--disable-blink-features=AutomationControlled');
-  options.addArguments('--headless'); // Comment this line to see the browser window
-  options.addArguments('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/89.0 Safari/537.36');
-  return await new Builder().forBrowser('chrome').setChromeOptions(options).build();
+  const ua = randomChoice(userAgents);
+  const options = new chromeOptions()
+    .addArguments('--headless=new')
+    .addArguments('--disable-blink-features=AutomationControlled')
+    .addArguments('--disable-infobars')
+    .addArguments(`--user-agent=${ua}`);
+  if (proxies.length) {
+    const proxy = randomChoice(proxies);
+    console.log('Selenium proxy:', proxy);
+    options.addArguments(`--proxy-server=${proxy}`);
+  }
+  return new Builder().forBrowser('chrome').setChromeOptions(options).build();
 }
 
-function isValidLink(link) {
-  return link &&
-    link.startsWith('http') &&
-    !/\.(jpg|jpeg|png|gif|svg|webp|bmp|ico|pdf|js|css|mp4|avi|mkv|mp3)$/i.test(link);
+// Build Puppeteer browser & page
+async function buildPuppeteer() {
+  const ua = randomChoice(userAgents);
+  const args = [];
+  if (proxies.length) {
+    const proxy = randomChoice(proxies);
+    console.log('Puppeteer proxy:', proxy);
+    args.push(`--proxy-server=${proxy}`);
+  }
+  const browser = await puppeteer.launch({ headless: true, args });
+  const page = await browser.newPage();
+  await page.setUserAgent(ua);
+  return { browser, page };
 }
 
-// ✅ Google Scraper
-async function scrapeGoogle(query) {
-  const driver = await buildDriver();
-  const results = [];
-  try {
-    await driver.get(`https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`);
-    await sleep(3000);
+// —————————————————————————————————————————
+// 1) scrapeGoogle ‣ SELENIUM (50 pages × 50 links = 2500)
+// —————————————————————————————————————————
+async function scrapeGoogle(driver, query) {
+  const links = new Set();
+  // Loop through Google pages without quitting driver
+  for (let pageIndex = 0; pageIndex < GOOGLE_PAGES; pageIndex++) {
+    const start = pageIndex * BATCH_SIZE;
+    console.log(`→ Google page ${pageIndex + 1}/${GOOGLE_PAGES}, start=${start}`);
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}` +
+                `&num=${BATCH_SIZE}&start=${start}&hl=en&gl=us`;
 
-    // Accept consent popup
+    await driver.get(url);
+    // Accept any consent popup
     try {
-      const agreeBtn = await driver.findElement(By.css('form[action*="consent"] button'));
-      await agreeBtn.click();
-      await sleep(1000);
-    } catch (err) {
-      console.log("No consent button found or already accepted.");
-    }
+      const btn = await driver.findElement(
+        By.xpath("//button[contains(text(),'I agree') or contains(text(),'Accept all')]")
+      );
+      await btn.click();
+      await driver.sleep(1000);
+    } catch {}
 
-    while (results.length < 50) {
-      await driver.wait(until.elementsLocated(By.css('a')), 5000);
+    // Scroll to load results
+    await driver.executeScript('window.scrollBy(0, window.innerHeight);');
+    await driver.wait(until.elementsLocated(By.css('h3')), 8000).catch(() => {});
 
-      const links = await driver.findElements(By.css('a'));
-      for (let el of links) {
-        const link = await el.getAttribute('href');
-        const title = await el.getText();
-
-        const isValid = link?.startsWith("http") &&
-                        !results.find(r => r.link === link) &&
-                        title?.trim();
-
-        if (isValid) {
-          results.push({ title: title.trim(), link });
-        }
-
-        if (results.length >= 50) break;
-      }
-
-      // Go to next page
-      try {
-        const nextBtn = await driver.findElement(By.id('pnnext'));
-        await nextBtn.click();
-        await sleep(3000);
-      } catch {
-        break;
+    // Collect result links
+    let elems = await driver.findElements(By.xpath("//a[.//h3]"));
+    if (!elems.length) {
+      const titles = await driver.findElements(By.css('h3'));
+      elems = [];
+      for (const t of titles) {
+        try { elems.push(await t.findElement(By.xpath('./ancestor::a'))); } catch {}
       }
     }
-  } catch (err) {
-    console.error("Google scraping error:", err);
-  } finally {
-    await driver.quit();
+
+    const before = links.size;
+    for (const el of elems) {
+      const href = await el.getAttribute('href').catch(() => null);
+      if (href) links.add(href);
+    }
+    console.log(`  got ${links.size - before} new, total ${links.size}`);
+    if (!elems.length) break;
+    await driver.sleep(DELAY_MS + Math.random() * 200);
   }
-  return results;
+  return [...links].slice(0, GOOGLE_PAGES * BATCH_SIZE);
 }
 
-
-// ✅ Bing Scraper
-async function scrapeBing(query) {
-  const driver = await buildDriver();
-  const results = [];
-  try {
-    await driver.get(`https://www.bing.com/search?q=${encodeURIComponent(query)}`);
-    await sleep(3000);
-
-    while (results.length < 50) {
-      await driver.wait(until.elementsLocated(By.css('li.b_algo h2 a')), 5000);
-      const links = await driver.findElements(By.css('li.b_algo h2 a'));
-
-      for (let el of links) {
-        const link = await el.getAttribute('href');
-        const title = await el.getText();
-        if (isValidLink(link) && title && !results.find(r => r.link === link)) {
-          results.push({ title, link });
-        }
-        if (results.length >= 50) break;
-      }
-
-      try {
-        const nextBtn = await driver.findElement(By.css('a.sb_pagN'));
-        await nextBtn.click();
-        await sleep(3000);
-      } catch {
-        break;
-      }
-    }
-  } catch (err) {
-    console.error("Bing scraping error:", err);
-  } finally {
-    await driver.quit();
+// —————————————————————————————————————————
+// 2) scrapeBing ‣ PUPPETEER (unchanged)
+// —————————————————————————————————————————
+async function scrapeBing(page, query) {
+  const links = new Set();
+  for (let first = 1; links.size < MAX_PER_ENGINE; first += 50) {
+    const count = Math.min(50, MAX_PER_ENGINE - links.size);
+    console.log(`→ Bing: first=${first}, count=${count}`);
+    const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}` +
+                `&first=${first}&count=${count}`;
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    const newLinks = await page.$$eval('#b_results li.b_algo h2 a', els => els.map(a => a.href));
+    const before = links.size;
+    newLinks.forEach(h => h && links.add(h));
+    console.log(`  got ${links.size - before} new, total ${links.size}`);
+    if (!newLinks.length) break;
+    await delay(DELAY_MS + Math.random() * 300);
   }
-  return results;
+  return [...links];
 }
 
-// ✅ Yahoo Scraper
-async function scrapeYahoo(query) {
-  const driver = await buildDriver();
-  const results = [];
-  try {
-    await driver.get(`https://search.yahoo.com/search?p=${encodeURIComponent(query)}`);
-    await sleep(3000);
-
-    while (results.length < 50) {
-      await driver.wait(until.elementsLocated(By.css('div.compTitle h3.title > a')), 5000);
-      const links = await driver.findElements(By.css('div.compTitle h3.title > a'));
-
-      for (let el of links) {
-        const link = await el.getAttribute('href');
-        const title = await el.getText();
-        if (isValidLink(link) && title && !results.find(r => r.link === link)) {
-          results.push({ title, link });
-        }
-        if (results.length >= 50) break;
-      }
-
-      try {
-        const nextBtn = await driver.findElement(By.css('a.next'));
-        await nextBtn.click();
-        await sleep(3000);
-      } catch {
-        break;
-      }
-    }
-  } catch (err) {
-    console.error("Yahoo scraping error:", err);
-  } finally {
-    await driver.quit();
+// —————————————————————————————————————————
+// 3) scrapeDuckDuckGo ‣ PUPPETEER (unchanged)
+// —————————————————————————————————————————
+async function scrapeDuckDuckGo(page, query) {
+  const links = new Set();
+  for (let s = 0; links.size < MAX_PER_ENGINE; s += 20) {
+    const count = Math.min(20, MAX_PER_ENGINE - links.size);
+    console.log(`→ DuckDuckGo: s=${s}, count=${count}`);
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&s=${s}`;
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    const newLinks = await page.$$eval('a.result__a', els => els.map(a => a.href));
+    const before = links.size;
+    newLinks.forEach(h => h && links.add(h));
+    console.log(`  got ${links.size - before} new, total ${links.size}`);
+    if (!newLinks.length) break;
+    await delay(DELAY_MS + Math.random() * 300);
   }
-  return results;
+  return [...links];
 }
 
-// ✅ DuckDuckGo Scraper
-async function scrapeDuckDuckGo(query) {
-  const driver = await buildDriver();
-  const results = [];
-
-  try {
-    await driver.get(`https://duckduckgo.com/?q=${encodeURIComponent(query)}&ia=web`);
-    await sleep(3000);
-
-    let retries = 0;
-    while (results.length < 50 && retries < 10) {
-      const links = await driver.findElements(By.css('a[data-testid="result-title-a"]'));
-
-      for (let el of links) {
-        const link = await el.getAttribute('href');
-        const title = await el.getText();
-        if (isValidLink(link) && title && !results.find(r => r.link === link)) {
-          results.push({ title, link });
-        }
-      }
-
-      // Scroll to try to load more
-      await driver.executeScript("window.scrollTo(0, document.body.scrollHeight);");
-      await sleep(2000);
-      retries++;
+// —————————————————————————————————————————
+// 4) scrapeYahoo ‣ SELENIUM (unchanged)
+// —————————————————————————————————————————
+async function scrapeYahoo(driver, query) {
+  const links = new Set();
+  for (let b = 1; links.size < MAX_PER_ENGINE; b += 20) {
+    console.log(`→ Yahoo: b=${b}`);
+    const url = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}&b=${b}`;
+    await driver.get(url);
+    await driver.wait(until.elementsLocated(By.css('div#web ol li div.algo h3.title a')), 5000).catch(() => {});
+    const elems = await driver.findElements(By.css('div#web ol li div.algo h3.title a'));
+    if (!elems.length) break;
+    const before = links.size;
+    for (const el of elems) {
+      const href = await el.getAttribute('href').catch(() => null);
+      if (href) links.add(href);
     }
-
-  } catch (err) {
-    console.error("DuckDuckGo scraping error:", err);
-  } finally {
-    await driver.quit();
+    console.log(`  got ${links.size - before} new, total ${links.size}`);
+    await driver.sleep(DELAY_MS + Math.random() * 300);
   }
-
-  return results;
+  return [...links];
 }
 
-
-// ✅ Run All Scrapers
+// Main
 export const scrapeEngine = async (query) => {
-  const engines = {
-    google: scrapeGoogle,
-    bing: scrapeBing,
-    yahoo: scrapeYahoo,
-    duckduckgo: scrapeDuckDuckGo,
-  };
+  //const query = readline.question('🔍 Enter your search query: ').trim();
+  if (!query) return;
 
-  const toRet = [];
+  const { browser, page } = await buildPuppeteer();
+  const driver = await buildDriver();
 
-  for (const [name, scraperFunc] of Object.entries(engines)) {
-    console.log(`\n🔎 Scraping ${name.toUpperCase()}...`);
-    const links = await scraperFunc(query);
-    console.log(`✅ ${name.toUpperCase()} (${links.length} links):`);
-    links.forEach((l, i) => {
-      console.log(`${i + 1}. ${l.title}\n   ${l.link}`);
-    });
-    toRet.push(links);
-  }
+  console.log('\n🔍 Scraping Google…');
+  const g = await scrapeGoogle(driver, query);
+  console.log(`✅ Google: ${g.length}`);
 
-  console.log("\n🎯 Scraping completed for all search engines!");
-  return toRet;
+  console.log('\n🔍 Scraping Yahoo…');
+  const y = await scrapeYahoo(driver, query);
+  console.log(`✅ Yahoo: ${y.length}`);
+
+  console.log('\n🔍 Scraping Bing…');
+  const b = await scrapeBing(page, query);
+  console.log(`✅ Bing: ${b.length}`);
+
+  console.log('\n🔍 Scraping DuckDuckGo…');
+  const d = await scrapeDuckDuckGo(page, query);
+  console.log(`✅ DDG: ${d.length}`);
+
+  fs.writeFileSync('results.json', JSON.stringify({ google: g, yahoo: y, bing: b, ddg: d }, null, 2));
+  console.log('\n🎉 Done! Results saved to results.json');
+
+  await driver.quit();
+  await browser.close();
+  return [...g, ...y, ...b, ...d];
 };

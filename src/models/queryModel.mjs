@@ -14,8 +14,8 @@ export const getQueryById = async (id) => {
 export const addQuery = async (query) => {
     const initTime = new Date().toISOString().slice(0, 19).replace('T', ' ');; // log time of query and convert for SQL compat
     const [result] = await pool.query(
-        `INSERT INTO ${tableName} (query, initTime) VALUES (?, ?)`,
-        [query.toLowerCase(), initTime]
+        `INSERT INTO ${tableName} (searchPhrase, initTime, numResults) VALUES (?, ?, ?)`,
+        [query, initTime, 0]
     );
     return result.insertId;
 };

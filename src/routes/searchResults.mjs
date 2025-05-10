@@ -10,26 +10,26 @@ const sampleResults = [
     { title: 'Handlebars.js Guide', url: 'https://handlebarsjs.com/', snippet: 'Comprehensive guide for Handlebars.js, the templating engine.' },
 ];
 
-searchRouter.get('/search', (req, res) => {
-    const query = req.query.query || ''; // Get the search query from the URL parameters
-    let searchRes = []
-    if(useDb && query){
-        searchRes = returnResults(query);
-        console.log(searchRes);
+searchRouter.get('/search', async (req, res) => {
+    let query = req.query.query?.trim().toLowerCase() || ''; // Get and sanitize the query
+
+    if (!query) {
+        return res.render('results', { title: 'Search Results', query, results: [], stylesheet: '/css/results.css' });
     }
 
-    if (query) {
-        // Filter the results based on the query
-        const results = sampleResults.filter(result =>
-            result.title.toLowerCase().includes(query.toLowerCase()) ||
-            result.snippet.toLowerCase().includes(query.toLowerCase())
-        );
+    try {
+        const returned = await returnResults(query);
+        const toRet = returned.map(ele => ({
+            title: ele.title,
+            url: ele.url,
+            snippet: ''
+        }));
 
-        res.render('results', { title: 'Search Results', query, results, stylesheet: '/css/results.css'});
-    } else {
-        // Render the search page with no results if no query is provided
-        res.render('results', { title: 'Search Results', query, results: [], stylesheet: '/css/results.css' 
-        });
+        res.render('results', { title: 'Search Results', query, results: toRet, stylesheet: '/css/results.css' });
+
+    } catch (error) {
+        console.error("Error fetching results:", error);
+        res.status(500).render('results', { title: 'Search Results', query, results: [], stylesheet: '/css/results.css' });
     }
 });
 

@@ -24,16 +24,15 @@ CREATE TABLE `searchScraper`.`searchLog` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     initTime DATETIME NOT NULL,
     searchPhrase VARCHAR(255) NOT NULL,
-    numResults INT NOT NULL CHECK (numResults >= 0),
-    elapsedTime FLOAT NOT NULL CHECK (elapsedTime >= 0)
+    numResults INT NOT NULL DEFAULT 0 CHECK (numResults >= 0),
+    elapsedTime FLOAT NOT NULL DEFAULT 0 CHECK (elapsedTime >= 0)
 );
 
 CREATE TABLE `searchScraper`.`searchResults` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    url VARCHAR(2083) NOT NULL,
-    termCount INT NOT NULL CHECK (termCount >= 0),
-    source ENUM('bing', 'ddg', 'google', 'yahoo') NOT NULL,
+    title VARCHAR(255) NOT NULL DEFAULT 'Placeholder',
+    url VARCHAR(2083) NOT NULL, -- Using a large VARCHAR to accommodate URLs
+    termCount INT NOT NULL DEFAULT 0 CHECK (termCount >= 0),
     searchLog_id INT NOT NULL,
     FOREIGN KEY (searchLog_id) REFERENCES searchLog(id) ON DELETE CASCADE
 );

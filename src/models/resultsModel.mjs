@@ -6,12 +6,18 @@ export const getResultsByQueryId = async (id) => {
     return rows;
 };
 
-export const addResults = async (resultsList, sEngine, queryId) => {
-    const valsToInsert = resultsList.map(ele => `('${ele}', 0, ${sEngine}, ${queryId})`).join(',\n')
-    const [result] = await pool.query(
-        `INSERT INTO ${tableName} (url, termCount, source, searchLog_id)
-        VALUES ${valsToInsert};`,
-    );
-    return result.insertId;
+export const addResults = async (resultsList, queryId) => {
+    console.log("Adding results");
+    const values = resultsList.map(ele => [ele, 0, queryId]); // Use array format for parameterized queries
+
+    const query = `INSERT INTO ${tableName} (url, termCount, searchLog_id) VALUES ?`;
+
+    try {
+        const [result] = await pool.query(query, [values]); // Pass values as a parameterized array
+        return result.insertId;
+    } catch (error) {
+        console.error("Error inserting results:", error);
+        throw error;
+    }
 };
 
