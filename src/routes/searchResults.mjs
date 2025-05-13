@@ -20,9 +20,9 @@ searchRouter.get('/search', async (req, res) => {
     try {
         const returned = await returnResults(query);
         const toRet = returned.map(ele => ({
-            title: ele.title,
+            title: ele.title ? ele.title : ele.url,
             url: ele.url,
-            snippet: ele.termCount
+            snippet: ele.description ? ele.description : ele.url
         }));
 
         res.render('results', { title: 'Search Results', query, results: toRet, stylesheet: '/css/results.css' });

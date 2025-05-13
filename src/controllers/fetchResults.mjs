@@ -25,8 +25,9 @@ export const returnResults = async (query) => {
         //scrape results from internet, then add to db before returning
         let engineResults = await scrapeEngine(query);
         let dupeCt = 0
-        const remResults = removeDuplicates(engineResults.map(ele => ({url: ele, termCount: 0})));
+        const remResults = removeDuplicates(engineResults);
         [engineResults, dupeCt] = remResults;
+        engineResults.forEach(ele => (ele.termCount = 0));
         engineResults = await rankUrls(engineResults, query.split(' '));
         await addResults(engineResults, qId);
     }

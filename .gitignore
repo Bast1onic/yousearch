@@ -8,4 +8,5 @@ package-lock.json
 .node_repl_history
 
 results.json
+*.js
 TODO.md

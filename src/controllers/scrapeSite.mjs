@@ -1,36 +1,41 @@
 import puppeteer from 'puppeteer';
 
 const countKeywords = async (page, url, keywords) => {
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    try {
+        await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // Handle JavaScript dialogs
-    page.on('dialog', async (dialog) => {
-        console.log(`Auto-accepting dialog: ${dialog.message()}`);
-        await dialog.accept();
-    });
-
-    // Try to click buttons with "I agree" or "Accept"
-    await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]'));
-        const targetTexts = ['I agree', 'Accept', 'Close'];
-
-        buttons.forEach(button => {
-            const text = button.innerText.trim() || button.value.trim();
-            if (targetTexts.some(target => text.includes(target))) {
-                console.log(`Clicking button: ${text}`);
-                button.click();
-            }
+        // Handle JavaScript dialogs
+        page.on('dialog', async (dialog) => {
+            console.log(`Auto-accepting dialog: ${dialog.message()}`);
+            await dialog.accept();
         });
-    });
 
-    // Extract all visible text from the page
-    const pageText = await page.evaluate(() => document.body.innerText.toLowerCase());
+        // Try to click buttons with "I agree" or "Accept"
+        await page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]'));
+            const targetTexts = ['I agree', 'Accept', 'Close'];
 
-    // Count total occurrences of all keywords
-    return keywords.reduce((total, keyword) => {
-        const regex = new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g');
-        return total + (pageText.match(regex) || []).length;
-    }, 0);
+            buttons.forEach(button => {
+                const text = button.innerText.trim() || button.value.trim();
+                if (targetTexts.some(target => text.includes(target))) {
+                    console.log(`Clicking button: ${text}`);
+                    button.click();
+                }
+            });
+        });
+
+        // Extract all visible text from the page
+        const pageText = await page.evaluate(() => document.body.innerText.toLowerCase());
+
+        // Count total occurrences of all keywords
+        return keywords.reduce((total, keyword) => {
+            const regex = new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g');
+            return total + (pageText.match(regex) || []).length;
+        }, 0);
+    } catch (error) {
+        console.error(`Error occurred while processing the page: ${error.message}`);
+        return 0; // Return a default value in case of an error
+    }
 };
 
 export const rankUrls = async (urlObjects, keywords) => {
@@ -48,14 +53,3 @@ export const rankUrls = async (urlObjects, keywords) => {
     await browser.close();
     return urlObjects;
 };
-
-// Example usage
-/*
-const urlsToCheck = [
-    { url: 'https://healthtree.org/leukemia/community/how-long-will-i-live-with-leukemia', termCount: 0 },
-    { url: 'https://www.cancer.org/cancer/types/acute-myeloid-leukemia/about/key-statistics.html', termCount: 0 }
-];
-const keywordsToCheck = ['leukemia', 'mortality'];
-
-rankUrls(urlsToCheck, keywordsToCheck);
-*/
