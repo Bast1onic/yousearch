@@ -1,16 +1,34 @@
 import {addQuery, findQueryByName} from '../models/queryModel.mjs';
 import { addResults, getResultsByQueryId } from '../models/resultsModel.mjs';
 import { scrapeEngine } from './scraper.mjs';
+import { rankUrls } from './scrapeSite.mjs';
+
+const removeDuplicates = (arr) => {
+    const seen = new Set();
+    let dupeCount = 0;
+    const toRet = arr.filter(obj => {
+        if (seen.has(obj.url)) {
+            dupeCount = dupeCount + 1;
+            return false;
+        }
+        seen.add(obj.url);
+        return true;
+    });
+    return [toRet, dupeCount];
+};
+
 
 export const returnResults = async (query) => {
     let qId = await findQueryByName(query);
-    console.log(`ID was: ${qId}`);
     if(qId === null){
         qId = await addQuery(query);
         //scrape results from internet, then add to db before returning
-        const engineResults = await scrapeEngine(query);
+        let engineResults = await scrapeEngine(query);
+        let dupeCt = 0
+        const remResults = removeDuplicates(engineResults.map(ele => ({url: ele, termCount: 0})));
+        [engineResults, dupeCt] = remResults;
+        engineResults = await rankUrls(engineResults, query.split(' '));
         await addResults(engineResults, qId);
-        console.log(`ID is now: ${qId}`);
     }
     
     return await getResultsByQueryId(qId);

@@ -22,7 +22,7 @@ searchRouter.get('/search', async (req, res) => {
         const toRet = returned.map(ele => ({
             title: ele.title,
             url: ele.url,
-            snippet: ''
+            snippet: ele.termCount
         }));
 
         res.render('results', { title: 'Search Results', query, results: toRet, stylesheet: '/css/results.css' });
