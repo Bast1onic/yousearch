@@ -19,7 +19,7 @@ const GOOGLE_PAGES   = 2;     // Google: 25 pages × 10 = 250
 const BATCH_SIZE     = 10;     // Google results per page
 const DELAY_MS       = 500;    // base delay between actions
 
-const adsCount = {
+export const adsCount = {
   google: 0,
   bing: 0,
   yahoo: 0,

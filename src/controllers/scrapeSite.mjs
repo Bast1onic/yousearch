@@ -47,6 +47,11 @@ export const rankUrls = async (urlObjects, keywords) => {
     for (const urlObj of urlObjects) {
         console.log(`Ranking ${ct}/${urlObjects.length}...`)
         ct = ct + 1;
+        // Extract title if urlObj.title is an empty string
+        if (!urlObj.title) {
+            urlObj.title = await page.evaluate(() => document.title);
+        }
+
         urlObj.termCount = await countKeywords(page, urlObj.url, keywords);
     }
 

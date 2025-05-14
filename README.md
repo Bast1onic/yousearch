@@ -25,7 +25,10 @@ CREATE TABLE `searchScraper`.`searchLog` (
     initTime DATETIME NOT NULL,
     searchPhrase VARCHAR(255) NOT NULL,
     numResults INT NOT NULL DEFAULT 0 CHECK (numResults >= 0),
-    elapsedTime FLOAT NOT NULL DEFAULT 0 CHECK (elapsedTime >= 0)
+    ddgAds INT NOT NULL DEFAULT 0 CHECK (ddgAds >= 0),
+    bingAds INT NOT NULL DEFAULT 0 CHECK (bingAds >= 0),
+    yahooAds INT NOT NULL DEFAULT 0 CHECK (yahooAds >= 0),
+    googleAds INT NOT NULL DEFAULT 0 CHECK (googleAds >= 0)
 );
 
 CREATE TABLE `searchScraper`.`searchResults` (
