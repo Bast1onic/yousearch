@@ -101,6 +101,66 @@ async function buildPuppeteer() {
 //    • Sponsored badge: span.uEierd (text "Ad")
 // —————————————————————————————————————————
 async function scrapeGoogle(driver, query) {
+  let results = [];
+
+  for (let page = 0; page < GOOGLE_PAGES; page++) {
+    const start = page * BATCH_SIZE;
+    const url = `https://www.google.com/search` +
+                `?q=${encodeURIComponent(query)}` +
+                `&num=${BATCH_SIZE}&start=${start}` +
+                `&hl=en&gl=us`;
+
+    console.log(`\n→ Google page ${page+1}/${GOOGLE_PAGES}`);
+    await driver.get(url);
+    await delay(DELAY_MS);
+
+    // Dismiss consent popup if present
+    try {
+      const btn = await driver.findElement(By.xpath(
+        "//button[contains(text(),'I agree') or contains(text(),'Accept all')]"
+      ));
+      await btn.click();
+      await delay(500);
+    } catch {}
+
+    // Wait for results containers
+    await driver.wait(until.elementsLocated(By.id('rso')), 5000).catch(() => {});
+
+    let parentDiv = await driver.findElement(By.id('rso'));
+    console.log('Parent div found:', await parentDiv.getAttribute('id'));
+    let childDivs = await parentDiv.findElements(By.css(':scope > div'));
+
+    for (const box of childDivs) {
+      try {
+        // link + title
+        const linkEl  = await box.findElement(By.css('div.yuRUbf > a, a:has(h3)'));
+        const titleEl = await linkEl.findElement(By.css('h3'));
+        const title   = await titleEl.getText();
+        const url    = await linkEl.getAttribute('href');
+
+        
+        // check if "Sponsored" label is present
+        let fullText = await box.getText();
+        const sponsored = (/sponsored/i.test(fullText)) ? true : false;
+
+        const caption = fullText.split(title);
+        const description = '';
+        
+        results.push({ title, url, description, sponsored });
+      } catch {
+        // skip incomplete
+      }
+    }
+
+    console.log(`  Collected so far: ${results.length}`);
+    await delay(DELAY_MS + Math.random()*300);
+  }
+
+  results = filterAds(results, adsCount, 'google');
+  return results.slice(0, GOOGLE_PAGES * BATCH_SIZE);
+}
+/*
+async function scrapeGoogle(driver, query) {
   const results = [];
 
   for (let page = 0; page < GOOGLE_PAGES; page++) {
@@ -164,6 +224,8 @@ async function scrapeGoogle(driver, query) {
 
   return results.slice(0, GOOGLE_PAGES * BATCH_SIZE);
 }
+*/
+
 
 // —————————————————————————————————————————
 // 2) scrapeBing → PUPPETEER
@@ -199,7 +261,7 @@ async function scrapeBing(page, query) {
         const url       = linkNode ? linkNode.href      : '';
         const descNode  = node.querySelector('.b_caption p');
         const description = descNode ? descNode.innerText : '';
-        const adBadge   = node.querySelector('span.b_adSlug.b_opttxt.b_divdef');
+        const adBadge   = node.querySelector('span.b_adSlug');//.b_opttxt.b_divdef
         const sponsored = adBadge ? true : false;
         return { title, url, description, sponsored };
       })
@@ -279,7 +341,7 @@ async function scrapeDuckDuckGo(page, query) {
 //      “searchCenterTopAds” or “searchCenterBottomAds”
 // —————————————————————————————————————————
 async function scrapeYahoo(driver, query) {
-  const results = [];
+  let results = [];
 
   for (let b = 1; results.length < MAX_PER_ENGINE; b += 20) {
     const url = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}&b=${b}`;
@@ -296,16 +358,23 @@ async function scrapeYahoo(driver, query) {
     for (const box of boxes) {
       try {
         const linkEl      = await box.findElement(By.css('h3.title a'));
-        const title       = await linkEl.getText();
+        let title       = await linkEl.getText();
+        // ignore images, top stories links
+        if(title === 'Images' || title === 'Top Stories') {
+          continue;
+        }
+        
+        title = title.split('\n').pop();
+
         const href        = await linkEl.getAttribute('href');
         const descEl      = await box.findElement(By.css('.compText p'))
                                     .catch(() => null);
         const description = descEl ? await descEl.getText() : '';
         const classAttr   = await box.getAttribute('class');
-     const sponsored = /\bsearchCenterTopAds\b/.test(classAttr)
+        const sponsored = /\bsearchCenterTopAds\b/.test(classAttr)
                     || /\bsearchCenterBottomAds\b/.test(classAttr)
-                    ? 'Sponsored'
-                    : 'Organic';
+                    ? true
+                    : false;
 
         results.push({ title, url: href, description, sponsored });
       } catch {
@@ -316,7 +385,7 @@ async function scrapeYahoo(driver, query) {
     console.log(`  Collected so far: ${results.length}`);
     await delay(DELAY_MS + Math.random()*300);
   }
-
+  results = filterAds(results, adsCount, 'yahoo');
   return results.slice(0, MAX_PER_ENGINE);
 }
 
