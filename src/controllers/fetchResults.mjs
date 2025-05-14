@@ -24,9 +24,13 @@ export const returnResults = async (query) => {
         qId = await addQuery(query);
         //scrape results from internet, then add to db before returning
         let engineResults = await scrapeEngine(query);
+        
+        //remove dupes
         let dupeCt = 0
         const remResults = removeDuplicates(engineResults);
         [engineResults, dupeCt] = remResults;
+
+        //page ranking
         engineResults.forEach(ele => (ele.termCount = 0));
         engineResults = await rankUrls(engineResults, query.split(' '));
         await addResults(engineResults, qId);

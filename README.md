@@ -32,6 +32,7 @@ CREATE TABLE `searchScraper`.`searchResults` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL DEFAULT 'Placeholder',
     url VARCHAR(2083) NOT NULL, -- Using a large VARCHAR to accommodate URLs
+    description VARCHAR(2083) NOT NULL DEFAULT '',
     termCount INT NOT NULL DEFAULT 0 CHECK (termCount >= 0),
     searchLog_id INT NOT NULL,
     FOREIGN KEY (searchLog_id) REFERENCES searchLog(id) ON DELETE CASCADE

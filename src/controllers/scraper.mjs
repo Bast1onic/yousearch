@@ -19,6 +19,22 @@ const GOOGLE_PAGES   = 2;     // Google: 25 pages × 10 = 250
 const BATCH_SIZE     = 10;     // Google results per page
 const DELAY_MS       = 500;    // base delay between actions
 
+const adsCount = {
+  google: 0,
+  bing: 0,
+  yahoo: 0,
+  ddg: 0
+}
+
+const filterAds = (items, adsCount, engineName) => {
+    const filteredItems = items.filter(item => !item.sponsored);
+    adsCount[engineName] = items.length - filteredItems.length;
+    console.log(`${adsCount[engineName]} ads filtered for ${engineName} from ${items.length} results`);
+    return filteredItems;
+};
+
+
+
 // Optional proxies.txt (one per line)
 const proxies = fs.existsSync('proxies.txt')
   ? fs.readFileSync('proxies.txt','utf8')
@@ -159,7 +175,7 @@ const BING_PAGES = 2;
 const BING_BATCH = 10;
 
 async function scrapeBing(page, query) {
-  const results = [];
+  let results = [];
 
   for (let i = 0; i < BING_PAGES; i++) {
     const first = i * BING_BATCH + 1;
@@ -184,7 +200,7 @@ async function scrapeBing(page, query) {
         const descNode  = node.querySelector('.b_caption p');
         const description = descNode ? descNode.innerText : '';
         const adBadge   = node.querySelector('span.b_adSlug.b_opttxt.b_divdef');
-        const sponsored = adBadge ? 'Sponsored' : 'Organic';
+        const sponsored = adBadge ? true : false;
         return { title, url, description, sponsored };
       })
     );
@@ -198,8 +214,19 @@ async function scrapeBing(page, query) {
     console.log(`  Got ${pageResults.length}, total ${results.length}`);
     await delay(DELAY_MS + Math.random()*300);
   }
-
+  results = filterAds(results, adsCount, 'bing');
   return results.slice(0, MAX_PER_ENGINE);
+}
+
+function extractOriginalUrl(redirectUrl) {
+    try {
+        const url = new URL(redirectUrl);
+        const originalUrl = url.searchParams.get("uddg");
+        return originalUrl ? decodeURIComponent(originalUrl) : redirectUrl;
+    } catch (error) {
+        console.error("Invalid URL:", error);
+        return null;
+    }
 }
 
 // —————————————————————————————————————————
@@ -209,7 +236,7 @@ async function scrapeBing(page, query) {
 //    • Sponsored badge: .badge--ad.js-badge--ad
 // —————————————————————————————————————————
 async function scrapeDuckDuckGo(page, query) {
-  const results = [];
+  let results = [];
 
   for (let s = 0; results.length < MAX_PER_ENGINE; s += 20) {
     const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&s=${s}`;
@@ -224,8 +251,8 @@ async function scrapeDuckDuckGo(page, query) {
         const url       = linkNode ? linkNode.href      : '';
         const descNode  = node.querySelector('.result__snippet');
         const description = descNode ? descNode.innerText : '';
-        const adBadge   = node.querySelector('.badge--ad.js-badge--ad');
-        const sponsored = adBadge ? 'Sponsored' : 'Organic';
+        const adBadge   = node.querySelector('.badge--ad, .js-badge--ad');
+        const sponsored = adBadge ? true : false;
         return { title, url, description, sponsored };
       })
     );
@@ -239,7 +266,8 @@ async function scrapeDuckDuckGo(page, query) {
     console.log(`  Got ${pageResults.length}, total ${results.length}`);
     await delay(DELAY_MS + Math.random()*300);
   }
-
+  results = filterAds(results, adsCount, 'ddg');
+  results.forEach(ele => {ele.url = extractOriginalUrl(ele.url)});
   return results.slice(0, MAX_PER_ENGINE);
 }
 
@@ -325,8 +353,8 @@ export const scrapeEngine = async (query) => {
   // Save
   fs.writeFileSync(
     'results.json',
-    JSON.stringify({ google, bing, ddg, yahoo }, null, 2)
+    JSON.stringify({ ddg, bing, yahoo, google }, null, 2)
   );
   console.log('\n🎉 Done! Results written to results.json');
-  return [...google, ...yahoo, ...bing, ...ddg];
+  return [...ddg, ...bing, ...yahoo, ...google];
 };
