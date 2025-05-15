@@ -25,10 +25,7 @@ CREATE TABLE `searchScraper`.`searchLog` (
     initTime DATETIME NOT NULL,
     searchPhrase VARCHAR(255) NOT NULL,
     numResults INT NOT NULL DEFAULT 0 CHECK (numResults >= 0),
-    ddgAds INT NOT NULL DEFAULT 0 CHECK (ddgAds >= 0),
-    bingAds INT NOT NULL DEFAULT 0 CHECK (bingAds >= 0),
-    yahooAds INT NOT NULL DEFAULT 0 CHECK (yahooAds >= 0),
-    googleAds INT NOT NULL DEFAULT 0 CHECK (googleAds >= 0)
+    dupes INT NOT NULL DEFAULT 0 CHECK (dupes >= 0)
 );
 
 CREATE TABLE `searchScraper`.`searchResults` (
@@ -39,6 +36,19 @@ CREATE TABLE `searchScraper`.`searchResults` (
     termCount INT NOT NULL DEFAULT 0 CHECK (termCount >= 0),
     searchLog_id INT NOT NULL,
     FOREIGN KEY (searchLog_id) REFERENCES searchLog(id) ON DELETE CASCADE
+);
+
+CREATE TABLE `searchScraper`.`adCounts` (
+    searchId INT PRIMARY KEY,
+    ddgAds INT NOT NULL DEFAULT 0 CHECK (ddgAds >= 0),
+    bingAds INT NOT NULL DEFAULT 0 CHECK (bingAds >= 0),
+    yahooAds INT NOT NULL DEFAULT 0 CHECK (yahooAds >= 0),
+    googleAds INT NOT NULL DEFAULT 0 CHECK (googleAds >= 0),
+    numDDG INT NOT NULL DEFAULT 0 CHECK (numDDG >= 0),
+    numBing INT NOT NULL DEFAULT 0 CHECK (numBing >= 0),
+    numYahoo INT NOT NULL DEFAULT 0 CHECK (numYahoo >= 0),
+    numGoogle INT NOT NULL DEFAULT 0 CHECK (numGoogle >= 0),
+    FOREIGN KEY (searchId) REFERENCES `searchScraper`.`searchLog`(id) ON DELETE CASCADE
 );
 
 CREATE USER 'searchScraperApp'@'localhost' IDENTIFIED BY 'password';

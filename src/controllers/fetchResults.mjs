@@ -1,7 +1,8 @@
 import {addQuery, findQueryByName, updateQueryById} from '../models/queryModel.mjs';
 import { addResults, getResultsByQueryId } from '../models/resultsModel.mjs';
-import { adsCount, scrapeEngine } from './scraper.mjs';
+import { adsCount, scrapeEngine, totals } from './scraper.mjs';
 import { rankUrls } from './scrapeSite.mjs';
+import { insertAdCount, updateAdCount } from '../models/adsModel.mjs';
 
 const removeDuplicates = (arr) => {
     const seen = new Set();
@@ -33,8 +34,10 @@ export const returnResults = async (query) => {
         //page ranking
         engineResults.forEach(ele => (ele.termCount = 0));
         engineResults = await rankUrls(engineResults, query.split(' '));
+
         await addResults(engineResults, qId);
-        await updateQueryById(qId, engineResults.length, adsCount.ddg, adsCount.bing, adsCount.yahoo, adsCount.google);
+        await updateQueryById(qId, engineResults.length, dupeCt);
+        await insertAdCount(qId, adsCount.ddg, adsCount.bing, adsCount.yahoo, adsCount.google, totals.ddg, totals.bing, totals.yahoo, totals.google);
     }
     
     return await getResultsByQueryId(qId);

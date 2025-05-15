@@ -18,8 +18,17 @@ const MAX_PER_ENGINE = 25;    // for Bing, DuckDuckGo, Yahoo
 const GOOGLE_PAGES   = 2;     // Google: 25 pages × 10 = 250
 const BATCH_SIZE     = 10;     // Google results per page
 const DELAY_MS       = 500;    // base delay between actions
+const BING_PAGES = 2;
+const BING_BATCH = 10;
 
 export const adsCount = {
+  google: 0,
+  bing: 0,
+  yahoo: 0,
+  ddg: 0
+}
+
+export const totals = {
   google: 0,
   bing: 0,
   yahoo: 0,
@@ -155,7 +164,7 @@ async function scrapeGoogle(driver, query) {
     console.log(`  Collected so far: ${results.length}`);
     await delay(DELAY_MS + Math.random()*300);
   }
-
+  totals.google = results.length;
   results = filterAds(results, adsCount, 'google');
   return results.slice(0, GOOGLE_PAGES * BATCH_SIZE);
 }
@@ -233,8 +242,7 @@ async function scrapeGoogle(driver, query) {
 //    • Description: .b_caption p
 //    • Sponsored badge: span.b_adSlug.b_opttxt.b_divdef
 // —————————————————————————————————————————
-const BING_PAGES = 2;
-const BING_BATCH = 10;
+
 
 async function scrapeBing(page, query) {
   let results = [];
@@ -276,6 +284,7 @@ async function scrapeBing(page, query) {
     console.log(`  Got ${pageResults.length}, total ${results.length}`);
     await delay(DELAY_MS + Math.random()*300);
   }
+  totals.bing = results.length;
   results = filterAds(results, adsCount, 'bing');
   return results.slice(0, MAX_PER_ENGINE);
 }
@@ -328,6 +337,7 @@ async function scrapeDuckDuckGo(page, query) {
     console.log(`  Got ${pageResults.length}, total ${results.length}`);
     await delay(DELAY_MS + Math.random()*300);
   }
+  totals.ddg = results.length;
   results = filterAds(results, adsCount, 'ddg');
   results.forEach(ele => {ele.url = extractOriginalUrl(ele.url)});
   return results.slice(0, MAX_PER_ENGINE);
@@ -385,6 +395,7 @@ async function scrapeYahoo(driver, query) {
     console.log(`  Collected so far: ${results.length}`);
     await delay(DELAY_MS + Math.random()*300);
   }
+  totals.yahoo = results.length;
   results = filterAds(results, adsCount, 'yahoo');
   return results.slice(0, MAX_PER_ENGINE);
 }

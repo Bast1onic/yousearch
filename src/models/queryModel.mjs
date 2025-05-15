@@ -25,7 +25,7 @@ export const findQueryByName = async (query) => {
     return rows.length > 0 ? rows[0].id : null;
 };
 
-export const updateQueryById = async (id, total, ddg, bing, yahoo, google) => {
+export const updateQueryById = async (id, total, dupes) => {
     const [rows] = await pool.query(`SELECT * FROM ${tableName} WHERE id = ?`, [id]);
 
     if (rows.length === 0) {
@@ -33,8 +33,8 @@ export const updateQueryById = async (id, total, ddg, bing, yahoo, google) => {
     }
 
     await pool.query(
-        `UPDATE ${tableName} SET numResults = ?, ddgAds = ?, bingAds = ?, yahooAds = ?, googleAds = ? WHERE id = ?`,
-        [total, ddg, bing, yahoo, google, id]
+        `UPDATE ${tableName} SET numResults = ?, dupes = ? WHERE id = ?`,
+        [total, dupes, id]
     );
 
     return true; // Update success
