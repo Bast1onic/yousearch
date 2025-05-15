@@ -34,6 +34,7 @@ CREATE TABLE `searchScraper`.`searchResults` (
     url VARCHAR(2083) NOT NULL, -- Using a large VARCHAR to accommodate URLs
     description VARCHAR(2083) NOT NULL DEFAULT '',
     termCount INT NOT NULL DEFAULT 0 CHECK (termCount >= 0),
+    engine VARCHAR(255) DEFAULT '',
     searchLog_id INT NOT NULL,
     FOREIGN KEY (searchLog_id) REFERENCES searchLog(id) ON DELETE CASCADE
 );
