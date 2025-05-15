@@ -10,15 +10,16 @@ import puppeteer from 'puppeteer';
 import 'chromedriver';
 import { Builder, By, until } from 'selenium-webdriver';
 import chrome from 'selenium-webdriver/chrome.js';
-
+import dotenv from 'dotenv';
+dotenv.config();
 // —————————————————————————————————————————
 // CONFIGURATION
 // —————————————————————————————————————————
-const MAX_PER_ENGINE = 25;    // for Bing, DuckDuckGo, Yahoo
-const GOOGLE_PAGES   = 2;     // Google: 25 pages × 10 = 250
+const MAX_PER_ENGINE = process.env.PER_ENGINE;    // for Bing, DuckDuckGo, Yahoo
+const GOOGLE_PAGES   = process.env.PAGES_PER;     // Google: 25 pages × 10 = 250
 const BATCH_SIZE     = 10;     // Google results per page
 const DELAY_MS       = 500;    // base delay between actions
-const BING_PAGES = 2;
+const BING_PAGES = process.env.PAGES_PER;
 const BING_BATCH = 10;
 
 export const adsCount = {
@@ -134,10 +135,17 @@ async function scrapeGoogle(driver, query) {
 
     // Wait for results containers
     await driver.wait(until.elementsLocated(By.id('rso')), 5000).catch(() => {});
-
-    let parentDiv = await driver.findElement(By.id('rso'));
-    console.log('Parent div found:', await parentDiv.getAttribute('id'));
-    let childDivs = await parentDiv.findElements(By.css(':scope > div'));
+    let parentDiv = null
+    let childDivs = []
+    try {
+      parentDiv = await driver.findElement(By.id('rso'));
+      console.log('Parent div found:', await parentDiv.getAttribute('id'));
+      childDivs = await parentDiv.findElements(By.css(':scope > div'));
+    } catch (error) {
+      console.log('  ⚠️ No more Google results, stopping.');
+      break;
+    }
+    
 
     for (const box of childDivs) {
       try {
