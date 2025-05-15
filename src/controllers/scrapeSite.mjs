@@ -1,5 +1,12 @@
 import puppeteer from 'puppeteer';
 
+const stopWords = [
+  "a", "an", "the", "he", "she", "it", "they",
+  "on", "in", "at", "from", "with", "and", "but", "or", "nor",
+  "is", "are", "was", "were", "has", "have", "very", "just", "too", "also",
+  "good", "bad", "big", "small", "who", "what", "when", "where", "why"
+];
+
 const countKeywords = async (page, url, keywords) => {
     try {
         await page.goto(url, { waitUntil: 'networkidle2' });
@@ -41,6 +48,9 @@ const countKeywords = async (page, url, keywords) => {
 export const rankUrls = async (urlObjects, keywords) => {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
+
+    let keywordsFiltered = keywords.filter(word => !stopWords.includes(word));
+
     console.log("Ranking URLs...");
 
     let ct = 1;
@@ -52,7 +62,7 @@ export const rankUrls = async (urlObjects, keywords) => {
             urlObj.title = await page.evaluate(() => document.title);
         }
 
-        urlObj.termCount = await countKeywords(page, urlObj.url, keywords);
+        urlObj.termCount = await countKeywords(page, urlObj.url, keywordsFiltered);
     }
 
     await browser.close();
