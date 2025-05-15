@@ -7,4 +7,6 @@ package-lock.json
 .DS_Store?
 .node_repl_history
 
+results.json
+*.js
 TODO.md

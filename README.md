@@ -24,17 +24,31 @@ CREATE TABLE `searchScraper`.`searchLog` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     initTime DATETIME NOT NULL,
     searchPhrase VARCHAR(255) NOT NULL,
-    numResults INT NOT NULL CHECK (numResults >= 0),
-    elapsedTime FLOAT NOT NULL CHECK (elapsedTime >= 0)
+    numResults INT NOT NULL DEFAULT 0 CHECK (numResults >= 0),
+    dupes INT NOT NULL DEFAULT 0 CHECK (dupes >= 0)
 );
 
 CREATE TABLE `searchScraper`.`searchResults` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    url VARCHAR(2083) NOT NULL,
-    termCount INT NOT NULL CHECK (termCount >= 0),
-    source ENUM('bing', 'ddg', 'google', 'yahoo') NOT NULL,
+    title VARCHAR(255) NOT NULL DEFAULT 'Placeholder',
+    url VARCHAR(2083) NOT NULL, -- Using a large VARCHAR to accommodate URLs
+    description VARCHAR(2083) NOT NULL DEFAULT '',
+    termCount INT NOT NULL DEFAULT 0 CHECK (termCount >= 0),
     searchLog_id INT NOT NULL,
     FOREIGN KEY (searchLog_id) REFERENCES searchLog(id) ON DELETE CASCADE
+);
+
+CREATE TABLE `searchScraper`.`adCounts` (
+    searchId INT PRIMARY KEY,
+    ddgAds INT NOT NULL DEFAULT 0 CHECK (ddgAds >= 0),
+    bingAds INT NOT NULL DEFAULT 0 CHECK (bingAds >= 0),
+    yahooAds INT NOT NULL DEFAULT 0 CHECK (yahooAds >= 0),
+    googleAds INT NOT NULL DEFAULT 0 CHECK (googleAds >= 0),
+    numDDG INT NOT NULL DEFAULT 0 CHECK (numDDG >= 0),
+    numBing INT NOT NULL DEFAULT 0 CHECK (numBing >= 0),
+    numYahoo INT NOT NULL DEFAULT 0 CHECK (numYahoo >= 0),
+    numGoogle INT NOT NULL DEFAULT 0 CHECK (numGoogle >= 0),
+    FOREIGN KEY (searchId) REFERENCES `searchScraper`.`searchLog`(id) ON DELETE CASCADE
 );
 
 CREATE USER 'searchScraperApp'@'localhost' IDENTIFIED BY 'password';

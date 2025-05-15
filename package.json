@@ -4,18 +4,22 @@
   "main": "server.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.mjs"
+    "start": "node server.mjs"
   },
   "keywords": [],
   "author": "Bast1onic",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "chromedriver": "^136.0.0",
+    "cjs-to-es6": "^2.0.1",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "express-handlebars": "^8.0.1",
     "mysql2": "^3.14.0",
-    "selenium-webdriver": "^4.30.0"
+    "puppeteer": "^24.8.2",
+    "readline-sync": "^1.4.10",
+    "selenium-webdriver": "^4.32.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
