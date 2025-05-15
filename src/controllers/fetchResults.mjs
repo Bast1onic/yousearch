@@ -1,10 +1,10 @@
 import {addQuery, findQueryByName, updateQueryById} from '../models/queryModel.mjs';
 import { addResults, getResultsByQueryId } from '../models/resultsModel.mjs';
-import { adsCount, scrapeEngine, totals } from './scraper.mjs';
+import { adsCount, scrapeEngine, totals, perDupes } from './scraper.mjs';
 import { rankUrls } from './scrapeSite.mjs';
 import { insertAdCount, updateAdCount } from '../models/adsModel.mjs';
 
-const removeDuplicates = (arr) => {
+export const removeDuplicates = (arr) => {
     const seen = new Set();
     let dupeCount = 0;
     const toRet = arr.filter(obj => {
@@ -38,6 +38,7 @@ export const returnResults = async (query) => {
         await addResults(engineResults, qId);
         await updateQueryById(qId, engineResults.length, dupeCt);
         await insertAdCount(qId, adsCount.ddg, adsCount.bing, adsCount.yahoo, adsCount.google, totals.ddg, totals.bing, totals.yahoo, totals.google);
+        console.log(perDupes);
     }
     
     return await getResultsByQueryId(qId);

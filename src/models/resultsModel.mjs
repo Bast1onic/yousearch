@@ -8,9 +8,9 @@ export const getResultsByQueryId = async (id) => {
 
 export const addResults = async (resultsList, queryId) => {
     console.log("Adding results");
-    const values = resultsList.map(ele => [ele.url, ele.title, ele.description, ele.termCount, queryId]); // Use array format for parameterized queries
+    const values = resultsList.map(ele => [ele.url, ele.title, ele.description, ele.termCount, ele.engine, queryId]); // Use array format for parameterized queries
     console.log(values[0]);
-    const query = `INSERT INTO ${tableName} (url, title, description, termCount, searchLog_id) VALUES ?`;
+    const query = `INSERT INTO ${tableName} (url, title, description, termCount, engine, searchLog_id) VALUES ?`;
 
     try {
         const [result] = await pool.query(query, [values]); // Pass values as a parameterized array

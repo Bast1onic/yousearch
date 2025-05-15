@@ -11,6 +11,7 @@ import 'chromedriver';
 import { Builder, By, until } from 'selenium-webdriver';
 import chrome from 'selenium-webdriver/chrome.js';
 import dotenv from 'dotenv';
+import { removeDuplicates } from './fetchResults.mjs';
 dotenv.config();
 // —————————————————————————————————————————
 // CONFIGURATION
@@ -30,6 +31,13 @@ export const adsCount = {
 }
 
 export const totals = {
+  google: 0,
+  bing: 0,
+  yahoo: 0,
+  ddg: 0
+}
+
+export const perDupes = {
   google: 0,
   bing: 0,
   yahoo: 0,
@@ -163,7 +171,7 @@ async function scrapeGoogle(driver, query) {
         const caption = fullText.split(title);
         const description = '';
         
-        results.push({ title, url, description, sponsored });
+        results.push({ title, url, description, sponsored, engine: 'google'});
       } catch {
         // skip incomplete
       }
@@ -174,74 +182,9 @@ async function scrapeGoogle(driver, query) {
   }
   totals.google = results.length;
   results = filterAds(results, adsCount, 'google');
+  [results, perDupes.google] = removeDuplicates(results);
   return results.slice(0, GOOGLE_PAGES * BATCH_SIZE);
 }
-/*
-async function scrapeGoogle(driver, query) {
-  const results = [];
-
-  for (let page = 0; page < GOOGLE_PAGES; page++) {
-    const start = page * BATCH_SIZE;
-    const url = `https://www.google.com/search` +
-                `?q=${encodeURIComponent(query)}` +
-                `&num=${BATCH_SIZE}&start=${start}` +
-                `&hl=en&gl=us`;
-
-    console.log(`\n→ Google page ${page+1}/${GOOGLE_PAGES}`);
-    await driver.get(url);
-    await delay(DELAY_MS);
-
-    // Dismiss consent popup if present
-    try {
-      const btn = await driver.findElement(By.xpath(
-        "//button[contains(text(),'I agree') or contains(text(),'Accept all')]"
-      ));
-      await btn.click();
-      await delay(500);
-    } catch {}
-
-    // Wait for results containers
-    await driver.wait(until.elementsLocated(By.css('div.tF2Cxc, div.g')), 5000)
-      .catch(() => {});
-
-    // Prefer new layout
-    let boxes = await driver.findElements(By.css('div.tF2Cxc'));
-    if (!boxes.length) {
-      boxes = await driver.findElements(By.css('div.g'));
-    }
-
-    for (const box of boxes) {
-      try {
-        // link + title
-        const linkEl  = await box.findElement(By.css('div.yuRUbf > a, a:has(h3)'));
-        const titleEl = await linkEl.findElement(By.css('h3'));
-        const title   = await titleEl.getText();
-        const href    = await linkEl.getAttribute('href');
-
-        // description
-        const descEl = await box.findElement(
-          By.css('.IsZvec .VwiC3b, span.aCOpRe')
-        ).catch(() => null);
-        const description = descEl ? await descEl.getText() : '';
-
-        // sponsored?
-        const adEl = await box.findElement(By.css('.U3A9Ac.qV8iec'))
-                          .catch(() => null);
-        const sponsored = adEl ? 'Sponsored' : 'Organic';
-
-        results.push({ title, url: href, description, sponsored });
-      } catch {
-        // skip incomplete
-      }
-    }
-
-    console.log(`  Collected so far: ${results.length}`);
-    await delay(DELAY_MS + Math.random()*300);
-  }
-
-  return results.slice(0, GOOGLE_PAGES * BATCH_SIZE);
-}
-*/
 
 
 // —————————————————————————————————————————
@@ -279,7 +222,7 @@ async function scrapeBing(page, query) {
         const description = descNode ? descNode.innerText : '';
         const adBadge   = node.querySelector('span.b_adSlug');//.b_opttxt.b_divdef
         const sponsored = adBadge ? true : false;
-        return { title, url, description, sponsored };
+        return { title, url, description, sponsored, engine: 'bing' };
       })
     );
 
@@ -294,6 +237,7 @@ async function scrapeBing(page, query) {
   }
   totals.bing = results.length;
   results = filterAds(results, adsCount, 'bing');
+  [results, perDupes.bing] = removeDuplicates(results);
   return results.slice(0, MAX_PER_ENGINE);
 }
 
@@ -332,7 +276,7 @@ async function scrapeDuckDuckGo(page, query) {
         const description = descNode ? descNode.innerText : '';
         const adBadge   = node.querySelector('.badge--ad, .js-badge--ad');
         const sponsored = adBadge ? true : false;
-        return { title, url, description, sponsored };
+        return { title, url, description, sponsored, engine: 'ddg'};
       })
     );
 
@@ -348,6 +292,7 @@ async function scrapeDuckDuckGo(page, query) {
   totals.ddg = results.length;
   results = filterAds(results, adsCount, 'ddg');
   results.forEach(ele => {ele.url = extractOriginalUrl(ele.url)});
+  [results, perDupes.ddg] = removeDuplicates(results);
   return results.slice(0, MAX_PER_ENGINE);
 }
 
@@ -394,7 +339,7 @@ async function scrapeYahoo(driver, query) {
                     ? true
                     : false;
 
-        results.push({ title, url: href, description, sponsored });
+        results.push({ title, url: href, description, sponsored, engine: 'yahoo'});
       } catch {
         /* skip */
       }
@@ -405,6 +350,7 @@ async function scrapeYahoo(driver, query) {
   }
   totals.yahoo = results.length;
   results = filterAds(results, adsCount, 'yahoo');
+  [results, perDupes.yahoo] = removeDuplicates(results);
   return results.slice(0, MAX_PER_ENGINE);
 }
 
@@ -441,7 +387,7 @@ export const scrapeEngine = async (query) => {
   // Save
   fs.writeFileSync(
     'results.json',
-    JSON.stringify({ ddg, bing, yahoo, google }, null, 2)
+    JSON.stringify({ ddg, bing, yahoo, google, perDupes }, null, 2)
   );
   console.log('\n🎉 Done! Results written to results.json');
   return [...ddg, ...bing, ...yahoo, ...google];
