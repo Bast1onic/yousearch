@@ -13,8 +13,10 @@ DB_HOST=localhost
 DB_USER=searchScraperApp
 DB_PASSWORD=
 DB_NAME=searchScraper
+PER_ENGINE=250
+PAGES_PER=25
 ```
-The password can be whatever you want.
+The password can be whatever you want. `PER_ENGINE` controls how many results are fetched per engine, and `PAGES_PER` controls how many pages for an engine are scraped. This assumes that there are 10 results per page, so this should be 1/10 of `PER_ENGINE`.
 
 2. Run the following commands in MySQL to create the tables (make sure to replace password with the password specified above before running):
 ```
