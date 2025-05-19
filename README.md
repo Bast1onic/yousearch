@@ -1,5 +1,5 @@
 # YouSearch
-Final project for CCNY DSE I2400
+Final project for CCNY DSE I2400, by Allen Li and Sai Vamsee Bandaru
 
 # Dependencies
 * NodeJS
@@ -64,4 +64,4 @@ GRANT ALL PRIVILEGES ON searchScraper.* TO 'searchScraperApp'@'localhost';
 
 4. To start the app, run `npm start`. To stop it, do Ctrl+C. You can go to the url displayed in the command line in your browser to view the app.
 
-5. Note that search queries are pulled from the database if they have already been made. To re-run the scraping for an old query, you will need to delete the query from the database. For example, to remove a query for "childhood cancer", run this MySQL command: `DELETE from searchScraper.searchLog where searchPhrase = "childhood cancer";`
+5. Note that search queries are pulled from the database if they have already been made. To re-run the scraping for an old query, you will need to delete the query from the database. For example, to remove a query for "childhood cancer", run this MySQL command: `DELETE FROM searchScraper.searchLog WHERE searchPhrase = "childhood cancer";`
