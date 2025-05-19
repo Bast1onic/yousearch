@@ -22,7 +22,8 @@ searchRouter.get('/search', async (req, res) => {
         const toRet = returned.map(ele => ({
             title: ele.title ? ele.title : ele.url,
             url: ele.url,
-            snippet: ele.description ? ele.description : ele.url
+            snippet: ele.description ? ele.description : ele.url,
+            frequency: ele.termCount
         }));
 
         res.render('results', { title: 'Search Results', query, results: toRet, stylesheet: '/css/results.css' });
